@@ -1,5 +1,9 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api/v1";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 const GUEST_KEY = "sommerfrische_guest_id";
+
+if (!API_BASE_URL) {
+  throw new Error("VITE_API_BASE_URL is not defined");
+}
 
 function getGuestId() {
   let id = localStorage.getItem(GUEST_KEY);
