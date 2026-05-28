@@ -20,6 +20,8 @@ jobs:
        
     env:
         VITE_API_BASE_URL: https://coolair-api-prod-bxc8hweyechudvb0.westeurope-01.azurewebsites.net/api/v1
+        VITE_PIWIK_PRO_SITE_ID: 7a869ec1-2d1e-4866-a58f-67de85df74e8
+        VITE_PIWIK_PRO_CONTAINER_URL: https://wienenergie.piwik.pro/login
 
     steps:
       - uses: actions/checkout@v3
