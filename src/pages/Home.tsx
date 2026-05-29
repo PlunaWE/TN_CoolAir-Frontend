@@ -1,591 +1,1706 @@
-import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { BrandShell } from "../components/BrandShell";
-import { FaqAccordion } from "../components/FaqAccordion";
-import { Footer } from "../components/Footer";
-import { trackEvent } from "../lib/piwik";
-import { offers, faqItems } from "../lib/content";
-import { cartService } from "../services/cartService";
+import {
+  Wrench,
+  Zap,
+  Snowflake,
+  ThermometerSun,
+  Volume2,
+  Leaf,
+  Gift,
+  X,
+  Clock,
+  Truck,
+  ChevronLeft,
+  ChevronRight,
+  CircleHelp,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 
-const pageWrap: CSSProperties = {
-  maxWidth: 1180,
-  margin: "0 auto",
-  padding: "0 18px",
+const surface = "#f3f3f3";
+const headingColor = "#07126d";
+const bodyColor = "#666b78";
+const mutedColor = "#7f8491";
+const borderColor = "#d9dbe5";
+const cardBorder = "#1a1f8a";
+const successGreen = "#0b8967";
+
+type OfferKey = "stromvorteil" | "solo";
+
+type GalleryItem = {
+  src: string;
+  thumb: string;
+  alt: string;
 };
 
-const sectionGap = 92;
-const headingColor = "#05057a";
-const mutedText = "#717785";
-const cardBorder = "#d9dced";
-const surface = "#efefef";
+type FaqItem = {
+  question: string;
+  answer: string | JSX.Element;
+};
 
-function SvgIcon({ children, size = 20, color = "currentColor", stroke = 2 }: { children: ReactNode; size?: number; color?: string; stroke?: number }) {
-  return (
-    <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke={color} strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      {children}
-    </svg>
-  );
-}
+type FaqGroup = {
+  title: string;
+  items: FaqItem[];
+};
 
 function CheckCircleIcon({ size = 21 }: { size?: number }) {
   return (
-    <span style={{ width: size, height: size, borderRadius: "50%", background: "#0b8967", color: "#fff", display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-      <SvgIcon size={size - 7} color="#fff" stroke={2.8}>
-        <path d="M5 12.5l4 4L19 7.5" />
-      </SvgIcon>
-    </span>
-  );
-}
-
-function InfoCircleIcon({ size = 18, color = headingColor }: { size?: number; color?: string }) {
-  return (
-    <span style={{ width: size, height: size, display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-      <SvgIcon size={size} color={color} stroke={1.8}>
-        <circle cx="12" cy="12" r="9" />
-        <path d="M12 10v5" />
-        <path d="M12 7.5h.01" />
-      </SvgIcon>
-    </span>
-  );
-}
-
-function SnowflakeIcon() {
-  return (
-    <SvgIcon size={24} color={headingColor} stroke={1.9}>
-      <path d="M12 2v20" />
-      <path d="M4.9 6.1L19.1 17.9" />
-      <path d="M4.9 17.9L19.1 6.1" />
-      <path d="M12 2l-2 2" />
-      <path d="M12 2l2 2" />
-      <path d="M12 22l-2-2" />
-      <path d="M12 22l2-2" />
-    </SvgIcon>
-  );
-}
-
-function HeatIcon() {
-  return (
-    <SvgIcon size={24} color={headingColor} stroke={1.9}>
-      <path d="M15 14a4 4 0 1 1-6 3.5" />
-      <path d="M12 3v10" />
-      <path d="M9 6c0 1 1 1.8 1 2.8S9 10.5 9 11.5" />
-      <path d="M15 6c0 1-1 1.8-1 2.8s1 1.7 1 2.7" />
-    </SvgIcon>
-  );
-}
-
-function VolumeIcon() {
-  return (
-    <SvgIcon size={24} color={headingColor} stroke={1.9}>
-      <path d="M5 14h3l4 4V6L8 10H5z" />
-      <path d="M16 9a5 5 0 0 1 0 6" />
-      <path d="M18.5 6.5a8 8 0 0 1 0 11" />
-    </SvgIcon>
-  );
-}
-
-function LeafIcon() {
-  return (
-    <SvgIcon size={24} color={headingColor} stroke={1.9}>
-      <path d="M19 5c-8 0-12 4.5-12 10 0 2.8 1.8 4 4.2 4C16 19 19 14.6 19 5z" />
-      <path d="M8 14c2.5 0 5-1 7.5-3.5" />
-    </SvgIcon>
-  );
-}
-
-function GiftIcon() {
-  return (
-    <SvgIcon size={22} color={headingColor} stroke={1.8}>
-      <path d="M3 9h18v4H3z" />
-      <path d="M5 13v7h14v-7" />
-      <path d="M12 9v11" />
-      <path d="M12 9H8.5A2.5 2.5 0 0 1 8.5 4c2 0 3.5 2 3.5 5z" />
-      <path d="M12 9h3.5A2.5 2.5 0 0 0 15.5 4c-2 0-3.5 2-3.5 5z" />
-    </SvgIcon>
-  );
-}
-
-function TruckIcon() {
-  return (
-    <SvgIcon size={22} color={headingColor} stroke={1.8}>
-      <path d="M3 6h11v9H3z" />
-      <path d="M14 9h4l3 3v3h-7z" />
-      <circle cx="7.5" cy="17.5" r="1.7" />
-      <circle cx="18" cy="17.5" r="1.7" />
-    </SvgIcon>
-  );
-}
-
-function WrenchIcon() {
-  return (
-    <SvgIcon size={22} color={headingColor} stroke={1.8}>
-      <path d="M14 6a4 4 0 0 0 4.8 4.8L11 18.6a2 2 0 1 1-2.8-2.8l7.8-7.8A4 4 0 0 0 20 3.2z" />
-    </SvgIcon>
-  );
-}
-
-function LightningIcon() {
-  return (
-    <SvgIcon size={22} color={headingColor} stroke={1.8}>
-      <path d="M13 2L6 13h5l-1 9 8-12h-5l0-8z" />
-    </SvgIcon>
-  );
-}
-
-function BulletLightning() {
-  return (
-    <span style={{ width: 17, height: 17, display: "inline-flex", alignItems: "center", justifyContent: "center", color: headingColor, flexShrink: 0 }}>
-      <SvgIcon size={15} color={headingColor} stroke={2}>
-        <path d="M13 2L6.5 12h4l-.8 8 7-10.5h-4L13 2z" />
-      </SvgIcon>
-    </span>
-  );
-}
-
-function SpecialBadge({ label }: { label: string }) {
-  return (
     <span
       style={{
+        width: size,
+        height: size,
+        borderRadius: "50%",
+        background: successGreen,
+        color: "#fff",
         display: "inline-flex",
         alignItems: "center",
-        background: headingColor,
-        color: "#fff",
-        borderRadius: 999,
-        padding: "6px 14px",
-        fontSize: 10,
-        fontWeight: 900,
-        lineHeight: 1,
-        letterSpacing: 0.2,
-        textTransform: "uppercase",
+        justifyContent: "center",
+        flexShrink: 0,
       }}
     >
-      {label}
+      <svg
+        viewBox="0 0 24 24"
+        width={size - 7}
+        height={size - 7}
+        fill="none"
+        stroke="#fff"
+        strokeWidth="2.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M5 12.5l4 4L19 7.5" />
+      </svg>
     </span>
   );
 }
 
-function ImageOrPlaceholder({ src, alt, fallback, style }: { src: string; alt: string; fallback: string; style?: CSSProperties }) {
-  const [failed, setFailed] = useState(false);
-
-  if (failed) {
-    return (
-      <div
-        style={{
-          width: "100%",
-          height: "100%",
-          background: "#efefef",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          color: "#7a7a7a",
-          fontWeight: 700,
-          ...style,
-        }}
-      >
-        {fallback}
-      </div>
-    );
-  }
-
-  return <img src={src} alt={alt} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", ...style }} onError={() => setFailed(true)} />;
-}
-
-function LogoImage({ src, alt, width, href }: { src: string; alt: string; width: number; href?: string }) {
+function LogoImage({
+  src,
+  alt,
+  width,
+  href,
+}: {
+  src: string;
+  alt: string;
+  width: number;
+  href?: string;
+}) {
   const image = (
     <img
       src={src}
       alt={alt}
-      style={{ width, height: "auto", display: "block", objectFit: "contain" }}
-      onError={(e) => {
-        const img = e.currentTarget;
-        img.style.display = "none";
-        const parent = img.parentElement;
-        if (parent) {
-          parent.textContent = alt;
-          parent.setAttribute("style", (parent.getAttribute("style") || "") + ";display:flex;align-items:center;justify-content:center;color:#666;font-weight:800;");
-        }
+      style={{
+        width,
+        height: "auto",
+        display: "block",
+        objectFit: "contain",
       }}
     />
   );
 
-  const boxStyle: CSSProperties = {
-    minWidth: width,
-    minHeight: 42,
-  };
-
   if (href) {
     return (
-      <a href={href} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none", ...boxStyle }}>
+      <a href={href} target="_blank" rel="noreferrer" style={{ display: "block" }}>
         {image}
       </a>
     );
   }
 
-  return <div style={boxStyle}>{image}</div>;
+  return image;
 }
 
-const galleryImages = [
-  "/placeholders/gallery-1.webp",
-  "/placeholders/gallery-2.webp",
-  "/placeholders/gallery-3.webp",
-  "/placeholders/gallery-4.webp",
-  "/placeholders/gallery-5.webp",
-];
+function SectionTitle({
+  title,
+  subtitle,
+}: {
+  title: string;
+  subtitle?: string;
+}) {
+  return (
+    <div style={{ textAlign: "center", marginBottom: 34 }}>
+      <h2
+        style={{
+          margin: 0,
+          color: headingColor,
+          fontSize: 34,
+          fontWeight: 800,
+          letterSpacing: -0.6,
+        }}
+      >
+        {title}
+      </h2>
+      {subtitle ? (
+        <p
+          style={{
+            margin: "14px auto 0",
+            maxWidth: 760,
+            color: bodyColor,
+            fontSize: 18,
+            lineHeight: 1.55,
+          }}
+        >
+          {subtitle}
+        </p>
+      ) : null}
+    </div>
+  );
+}
 
-const heroBullets = [
-  "Midea Portasplit 3,5 kW Klimagerät",
-  "In wenigen Minuten einsatzbereit, ohne Fachinstallation",
-  "Sofort lieferbar",
-  "Lieferung bis zum Aufstellort",
-  "Inklusive oder exklusive 150 Euro Wien Energie-Stromgutschein*",
-];
-
-const specs = [
-  { icon: <SnowflakeIcon />, title: "Kühlen", text: "3,5 kW · A++ · bis 42 m²" },
-  { icon: <HeatIcon />, title: "Heizen", text: "3,5 kW · A+ · vollwertige Wärmepumpe" },
-  { icon: <VolumeIcon />, title: "Leise", text: "39 dB(A) – flüsterleise" },
-  { icon: <LeafIcon />, title: "Effizient", text: "~160 kWh pro Saison" },
-];
-
-const benefits = [
-  { icon: <GiftIcon />, title: "150 Euro Wien Energie-Stromgutschein", text: "Optional und direkt einlösbar auf Ihre Stromrechnung bei Wien Energie.", special: true, badge: "SOMMERFRISCHE SPEZIAL" },
-  { icon: <TruckIcon />, title: "Lieferung bis in Ihre Wohnung", text: "Bequem zum Aufstellort bis ins Dachgeschoss.", special: true, badge: "SOMMERFRISCHE SPEZIAL" },
-  { icon: <WrenchIcon />, title: "Installationsfrei", text: "Kein Bohren, kein*e Handwerker*in. In unter einer Stunde aufgestellt.", special: false },
-  { icon: <LightningIcon />, title: "Echte Split-Kühlung", text: "4× stärker als herkömmliche Mobilgeräte. Leise mit nur 39 dB.", special: false },
-];
-
-const steps = [
-  ["01", "Bestellen", "Online im Webshop Ihr Sommerfrische-Paket auswählen und bestellen."],
-  ["02", "Liefern lassen", "Lieferung bis zum Aufstellort – bequem zu Ihnen nach Hause."],
-  ["03", "Loskühlen", "Anschließen, einschalten, fertig. Kein*e Techniker*in nötig."],
-] as const;
-
-export default function HomePage() {
-  const [selectedOffer, setSelectedOffer] = useState<string | null>(null);
-  const [tipOpen, setTipOpen] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [ctaError, setCtaError] = useState("");
-  const [activeImage, setActiveImage] = useState(1);
-  const navigate = useNavigate();
-
-  const selected = useMemo(() => offers.find((offer) => offer.key === selectedOffer) || null, [selectedOffer]);
-
-  async function handleContinueToCheckout() {
-    if (busy) return;
-    if (!selected) {
-      trackEvent("checkout", "blocked_without_offer", "Weiter zur Kasse");
-      setCtaError("Bitte wählen Sie zuerst ein Angebot.");
-      document.getElementById("angebote")?.scrollIntoView({ behavior: "smooth", block: "start" });
-      return;
-    }
-    setBusy(true);
-    setCtaError("");
-    try {
-      trackEvent("checkout", "start_from_landing", selected.title, selected.price, { offer_key: selected.key });
-      try {
-        await cartService.clearCart();
-      } catch {}
-      await cartService.addItem({ product_slug: "midea-portasplit-3-5kw", offer_key: selected.key, quantity: 1 });
-      trackEvent("cart", "add_item_success", selected.title, 1, { offer_key: selected.key, location: "landing_page" });
-      navigate("/checkout");
-    } catch (error) {
-      trackEvent("cart", "add_item_failure", selected.title, undefined, { offer_key: selected.key, message: (error as Error).message || "unknown_error" });
-      setCtaError((error as Error).message || "Weiter zur Kasse ist fehlgeschlagen.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  function prevImage() {
-    setActiveImage((prev) => (prev === 0 ? galleryImages.length - 1 : prev - 1));
-  }
-
-  function nextImage() {
-    setActiveImage((prev) => (prev === galleryImages.length - 1 ? 0 : prev + 1));
-  }
+function FaqAccordion({ groups }: { groups: FaqGroup[] }) {
+  const [openGroup, setOpenGroup] = useState<number | null>(null);
+  const [openItemKey, setOpenItemKey] = useState<string | null>(null);
 
   return (
-    <BrandShell>
-      <div style={{ background: surface, minHeight: "100vh", overflow: "hidden" }}>
-        <div style={{ position: "relative" }}>
-          <div
-            style={{
-              position: "absolute",
-              right: -96,
-              top: -126,
-              width: 760,
-              height: 290,
-              background: "linear-gradient(135deg, #f0c55f 0%, #ec6a17 42%, #e65a09 100%)",
-              borderBottomLeftRadius: 320,
-            }}
-          />
-          <section style={{ ...pageWrap, position: "relative", zIndex: 1, paddingTop: 14 }}>
-            <div
-              style={{
-                background: "#fff",
-                borderRadius: 14,
-                height: 62,
-                padding: "0 30px",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                boxShadow: "0 8px 24px rgba(0,0,0,0.04)",
-              }}
-            >
-              <LogoImage src="/placeholders/logo-wienenergie.svg" alt="Wien Energie" width={142} href="https://www.wienenergie.at/" />
-              <Link to="/" style={{ textDecoration: "none" }}>
-                <LogoImage src="/placeholders/logo-sommerfrische.png" alt="Sommerfrische" width={220} />
-              </Link>
-            </div>
-          </section>
+    <section style={{ padding: "90px 0 90px" }}>
+      <div style={{ maxWidth: 980, margin: "0 auto", padding: "0 32px" }}>
+        <SectionTitle title="Häufig gestellte Fragen" />
 
-          <section style={{ ...pageWrap, position: "relative", zIndex: 1, paddingTop: 72, paddingBottom: 88 }}>
-            <div style={{ display: "grid", gridTemplateColumns: "0.95fr 1.05fr", gap: 42, alignItems: "center" }}>
-              <div style={{ maxWidth: 495 }}>
-                <h1 style={{ color: headingColor, fontSize: 54, lineHeight: 1.06, fontWeight: 900, letterSpacing: -1.6, margin: 0 }}>Cooles Klima für heiße Sommer.</h1>
-                <div style={{ marginTop: 14, color: "#7b7b85", fontSize: 20 }}>Jetzt neu: Sommerfrische von Wien Energie</div>
-                <p style={{ marginTop: 26, color: "#616673", fontSize: 17, lineHeight: 1.58 }}>
-                  Wenn Ventilator oder offene Fenster nicht mehr gegen die Hitze in der Wohnung helfen, braucht&apos;s unsere Sommerfrische. Ein effizientes Klimagerät samt optionalem 150 Euro Wien Energie-Stromgutschein.
-                </p>
-                <div style={{ display: "grid", gap: 10, marginTop: 26 }}>
-                  {heroBullets.map((bullet) => (
-                    <div key={bullet} style={{ display: "flex", alignItems: "center", gap: 10, color: "#616673", fontSize: 15 }}>
-                      <CheckCircleIcon />
-                      <span>{bullet}</span>
-                    </div>
-                  ))}
-                </div>
-                <div style={{ marginTop: 16, color: "#777", fontSize: 13 }}>* 150-Euro-Gutschein nur für Wien Energie-Stromkund*innen einlösbar.</div>
+        <div style={{ display: "grid", gap: 14 }}>
+          {groups.map((group, groupIndex) => {
+            const groupOpen = openGroup === groupIndex;
+
+            return (
+              <div
+                key={group.title}
+                style={{
+                  background: "#fff",
+                  borderRadius: 14,
+                  boxShadow: "0 8px 24px rgba(0,0,0,0.04)",
+                  overflow: "hidden",
+                }}
+              >
                 <button
                   type="button"
                   onClick={() => {
-                    trackEvent("landing_page", "hero_cta_click", "Jetzt bestellen");
-                    document.getElementById("angebote")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                    setOpenGroup(groupOpen ? null : groupIndex);
+                    setOpenItemKey(null);
                   }}
-                  style={{ marginTop: 24, background: headingColor, color: "#fff", border: "none", borderRadius: 999, padding: "17px 28px", fontWeight: 900, fontSize: 16, cursor: "pointer", boxShadow: "0 2px 0 rgba(0,0,0,0.08)" }}
+                  style={faqGroupBtn}
                 >
-                  Jetzt bestellen
+                  <span>{group.title}</span>
+                  {groupOpen ? (
+                    <ChevronUp size={20} color={headingColor} />
+                  ) : (
+                    <ChevronDown size={20} color={headingColor} />
+                  )}
                 </button>
-              </div>
 
-              <div style={{ borderRadius: 16, overflow: "hidden", boxShadow: "0 8px 24px rgba(0,0,0,0.04)", background: "#fff", height: 468 }}>
-                <ImageOrPlaceholder src="/placeholders/hero-couple.jpg" alt="Sommerfrische Hero" fallback="HERO BILD-PLATZHALTER" style={{ height: 468, objectFit: "cover" }} />
+                {groupOpen ? (
+                  <div style={{ padding: "0 22px 18px" }}>
+                    {group.items.map((item, itemIndex) => {
+                      const itemKey = `${groupIndex}-${itemIndex}`;
+                      const itemOpen = openItemKey === itemKey;
+
+                      return (
+                        <div
+                          key={item.question}
+                          style={{
+                            borderTop: itemIndex === 0 ? "none" : "1px solid #e8ebf0",
+                            paddingTop: itemIndex === 0 ? 0 : 10,
+                            marginTop: itemIndex === 0 ? 0 : 10,
+                          }}
+                        >
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setOpenItemKey(itemOpen ? null : itemKey)
+                            }
+                            style={faqItemBtn}
+                          >
+                            <span>{item.question}</span>
+                            {itemOpen ? (
+                              <ChevronUp size={18} color={headingColor} />
+                            ) : (
+                              <ChevronDown size={18} color={headingColor} />
+                            )}
+                          </button>
+
+                          {itemOpen ? (
+                            <div
+                              style={{
+                                color: bodyColor,
+                                fontSize: 16,
+                                lineHeight: 1.65,
+                                padding: "4px 0 8px",
+                              }}
+                            >
+                              {typeof item.answer === "string" ? (
+                                <p style={{ margin: 0 }}>{item.answer}</p>
+                              ) : (
+                                item.answer
+                              )}
+                            </div>
+                          ) : null}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : null}
               </div>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+export default function HomePage() {
+  const navigate = useNavigate();
+  const [selectedOffer, setSelectedOffer] = useState<OfferKey>("stromvorteil");
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [tipOpen, setTipOpen] = useState(false);
+
+  const gallery: GalleryItem[] = useMemo(
+    () => [
+      {
+        src: "/placeholders/gallery-1.webp",
+        thumb: "/placeholders/gallery-1.webp",
+        alt: "Midea Portasplit Hauptansicht",
+      },
+      {
+        src: "/placeholders/gallery-2.webp",
+        thumb: "/placeholders/gallery-2.webp",
+        alt: "Midea Portasplit Wohnraumszene",
+      },
+      {
+        src: "/placeholders/gallery-3.webp",
+        thumb: "/placeholders/gallery-3.webp",
+        alt: "Midea Portasplit Detailansicht",
+      },
+      {
+        src: "/placeholders/gallery-4.webp",
+        thumb: "/placeholders/gallery-4.webp",
+        alt: "Midea Außeneinheit Detail",
+      },
+      {
+        src: "/placeholders/gallery-5.webp",
+        thumb: "/placeholders/gallery-5.webp",
+        alt: "Midea Portsaplit Fensterschlauch",
+      },
+    ],
+    []
+  );
+
+  const specs = [
+    { icon: Snowflake, title: "Kühlen", text: "3,5 kW · A++ · bis 42 m²" },
+    {
+      icon: ThermometerSun,
+      title: "Heizen",
+      text: "3,5 kW · A+ · vollwertige Wärmepumpe",
+    },
+    { icon: Volume2, title: "Leise", text: "39 dB(A) – flüsterleise" },
+    { icon: Leaf, title: "Effizient", text: "~160 kWh pro Saison" },
+  ];
+
+  const benefits = [
+    {
+      icon: Gift,
+      title: "150 Euro Wien Energie-Stromgutschein",
+      text: "Optional und direkt einlösbar auf Ihre Stromrechnung bei Wien Energie.",
+      badge: "SOMMERFRISCHE SPEZIAL",
+      highlighted: true,
+    },
+    {
+      icon: Truck,
+      title: "Lieferung bis in Ihre Wohnung",
+      text: "Bequem zum Aufstellort bis ins Dachgeschoss.",
+      badge: "SOMMERFRISCHE SPEZIAL",
+      highlighted: true,
+    },
+    {
+      icon: Wrench,
+      title: "Installationsfrei",
+      text: "Kein Bohren, kein*e Handwerker*in. In unter einer Stunde aufgestellt.",
+      badge: "",
+      highlighted: false,
+    },
+    {
+      icon: Zap,
+      title: "Echte Split-Kühlung",
+      text: "4× stärker als herkömmliche Mobilgeräte. Leise mit nur 39 dB.",
+      badge: "",
+      highlighted: false,
+    },
+  ];
+
+  const faqGroups: FaqGroup[] = [
+    {
+      title: "Das Gerät: Midea Portasplit",
+      items: [
+        {
+          question: "Was ist die Midea Portasplit?",
+          answer:
+            "Die Midea Portasplit ist ein mobiles Split-Klimagerät mit innenliegender Einheit und Außeneinheit, verbunden über einen flexiblen Schlauch durch ein gekipptes Fenster.",
+        },
+      ],
+    },
+    {
+      title: "Lieferung, Aufbau & Installation",
+      items: [
+        {
+          question: "Was umfasst die Lieferung?",
+          answer:
+            "Geliefert wird das Gerät inklusive Zubehör und Fenster-Set bis zum Aufstellort.",
+        },
+      ],
+    },
+    {
+      title: "Der Wien Energie-Stromgutschein",
+      items: [
+        {
+          question: "Wie erhalte ich den Gutschein?",
+          answer:
+            "Bei Wahl der Variante mit Strom-Vorteil ist der Gutschein im Paket inkludiert und wird entsprechend übermittelt.",
+        },
+      ],
+    },
+    {
+      title: "Kühlung im Vergleich: Welche Lösung passt zu mir?",
+      items: [
+        {
+          question: "Für wen ist Sommerfrische die optimale Lösung?",
+          answer:
+            "Für alle, die echte Split-Kühlung ohne aufwendige Fachinstallation möchten.",
+        },
+      ],
+    },
+    {
+      title: "Zahlung",
+      items: [
+        {
+          question: "Welche Zahlungsmethoden stehen zur Verfügung?",
+          answer: "Die Zahlungsabwicklung erfolgt bequem online über den Zahlungsdienstleister.",
+        },
+      ],
+    },
+    {
+      title: "Technische Details",
+      items: [
+        {
+          question: "Welche technischen Daten hat die Midea Portasplit?",
+          answer: (
+            <div style={{ overflowX: "auto" }}>
+              <table
+                style={{
+                  width: "100%",
+                  borderCollapse: "collapse",
+                  background: "#fff",
+                }}
+              >
+                <thead>
+                  <tr style={{ background: headingColor }}>
+                    <th style={thStyle}>Eigenschaft</th>
+                    <th style={thStyle}>Wert</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    ["Modellbezeichnung", "Midea Portasplit 3.5 kW"],
+                    ["Kühlleistung", "3,5 kW (9.000 BTU/h)"],
+                    ["Heizleistung", "3,5 kW (9.000 BTU/h)"],
+                    ["Geeignete Raumgröße", "Bis zu 42 m²"],
+                    ["Energieeffizienzklasse Kühlen / SEER", "A++ / 6,1"],
+                    ["Energieeffizienzklasse Heizen / SCOP", "A+ / 4,0"],
+                    ["Kältemittel", "R32"],
+                    ["Lautstärke Inneneinheit", "ab 39 dB(A)"],
+                  ].map(([label, value]) => (
+                    <tr key={label}>
+                      <td style={tdStyleLabel}>{label}</td>
+                      <td style={tdStyleValue}>{value}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          </section>
+          ),
+        },
+      ],
+    },
+  ];
+
+  useEffect(() => {
+    const selected = selectedOffer === "stromvorteil" ? "with-power-benefit" : "without-power-benefit";
+    localStorage.setItem("coolair_selected_offer", selected);
+  }, [selectedOffer]);
+
+  const offerTitle =
+    selectedOffer === "stromvorteil"
+      ? "Midea Portasplit 3,5 kW + Strom-Vorteil"
+      : "Midea Portasplit 3,5 kW ohne Strom-Vorteil";
+
+  const offerPrice = selectedOffer === "stromvorteil" ? 949 : 849;
+  const offerFootnote =
+    selectedOffer === "stromvorteil"
+      ? "* 150-Euro-Gutschein nur für Wien Energie-Stromkund*innen einlösbar."
+      : "";
+
+  const goToCheckout = () => {
+    navigate("/checkout");
+  };
+
+  return (
+    <div
+      style={{
+        background: surface,
+        minHeight: "100vh",
+        overflow: "hidden",
+        fontFamily:
+          "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+      }}
+    >
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          right: 0,
+          width: 620,
+          height: 220,
+          pointerEvents: "none",
+          zIndex: 0,
+        }}
+      >
+        <svg
+          viewBox="0 0 620 220"
+          width="100%"
+          height="100%"
+          preserveAspectRatio="none"
+          aria-hidden="true"
+        >
+          <path
+            d="M0,0 H620 V220 C490,220 408,185 332,150 C250,112 170,95 0,95 Z"
+            fill="#e96517"
+          />
+          <path
+            d="M0,0 H235 C235,36 210,58 182,73 C145,93 90,99 0,95 Z"
+            fill="#f1b152"
+          />
+        </svg>
+      </div>
+
+      <div style={{ position: "relative", zIndex: 1 }}>
+        <div style={{ maxWidth: 1040, margin: "0 auto", padding: "14px 32px 0" }}>
+          <div
+            style={{
+              background: "#fff",
+              borderRadius: 12,
+              height: 64,
+              padding: "0 32px",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              boxShadow: "0 8px 24px rgba(0,0,0,0.04)",
+            }}
+          >
+            <LogoImage
+              src="/placeholders/logo-wienenergie.svg"
+              alt="Wien Energie"
+              width={140}
+              href="https://www.wienenergie.at/"
+            />
+
+            <Link to="/" style={{ textDecoration: "none" }}>
+              <LogoImage
+                src="/placeholders/logo-sommerfrische.png"
+                alt="Sommerfrische"
+                width={220}
+              />
+            </Link>
+          </div>
         </div>
 
-        <section id="angebote" style={{ ...pageWrap, paddingBottom: sectionGap }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1.06fr 0.94fr", gap: 34, alignItems: "start" }}>
+        <section style={{ padding: "68px 0 56px" }}>
+          <div
+            style={{
+              maxWidth: 1040,
+              margin: "0 auto",
+              padding: "0 32px",
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: 34,
+              alignItems: "center",
+            }}
+          >
             <div>
-              <h2 style={{ fontSize: 33, margin: "0 0 12px", color: headingColor, lineHeight: 1.1, fontWeight: 900 }}>Jetzt Sommerfrische bestellen</h2>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, color: headingColor, fontWeight: 800, marginBottom: 10 }}>
-                <BulletLightning />
-                <span style={{ fontSize: 19 }}>Kühlung + Wien Energie-Stromgutschein – alles in einem Paket</span>
+              <h1
+                style={{
+                  color: headingColor,
+                  fontSize: 56,
+                  lineHeight: 1.08,
+                  fontWeight: 800,
+                  letterSpacing: -1.4,
+                  margin: 0,
+                }}
+              >
+                Cooles Klima für heiße Sommer.
+              </h1>
+
+              <div style={{ marginTop: 14, color: "#7b7b85", fontSize: 18 }}>
+                Jetzt neu: Sommerfrische von Wien Energie
               </div>
-              <p style={{ color: mutedText, lineHeight: 1.58, fontSize: 14, margin: "0 0 18px", maxWidth: 560 }}>
-                Sommerfrische ist Ihr Komplettpaket gegen die Hitze daheim. Das mobile Split-Klimagerät Midea Portasplit 3,5 kW gibt&apos;s inklusive oder exklusive Wien Energie-Stromgutschein zum Top-Preis!
+
+              <p
+                style={{
+                  marginTop: 26,
+                  color: bodyColor,
+                  fontSize: 18,
+                  lineHeight: 1.55,
+                  maxWidth: 620,
+                }}
+              >
+                Wenn Ventilator oder offene Fenster nicht mehr gegen die Hitze
+                in der Wohnung helfen, braucht‘s unsere Sommerfrische. Ein
+                effizientes Klimagerät samt optionalem 150 Euro Wien
+                Energie-Stromgutschein.
               </p>
 
-              <div style={{ borderRadius: 16, overflow: "hidden", border: `1px solid ${cardBorder}`, background: "#fff", boxShadow: "0 10px 24px rgba(0,0,0,0.04)" }}>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", background: headingColor, color: "#fff", padding: "18px 22px", columnGap: 12, textAlign: "center", fontWeight: 800, fontSize: 13, lineHeight: 1.45 }}>
-                  <div>A++ Kühlen<br />A+ Heizen</div>
-                  <div>Nur 39 dB(A)<br />im Silent-Modus</div>
-                  <div>518 x 340<br />x 646 mm Innengerät</div>
-                  <div>42 kg<br />Gesamtgewicht</div>
-                </div>
-
-                <div style={{ position: "relative", height: 474 }}>
-                  <ImageOrPlaceholder src={galleryImages[activeImage]} alt={`Produktbild ${activeImage + 1}`} fallback={`BILD-PLATZHALTER ${activeImage + 1}`} style={{ height: 474, objectFit: "contain", background: "#fff" }} />
-                  <button type="button" onClick={() => { trackEvent("carousel", "previous_image", `image_${activeImage + 1}`); prevImage(); }} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", width: 34, height: 34, borderRadius: "50%", border: "none", background: "rgba(255,255,255,0.95)", boxShadow: "0 4px 10px rgba(0,0,0,0.12)", cursor: "pointer", fontSize: 24, color: headingColor, lineHeight: 1 }}>‹</button>
-                  <button type="button" onClick={() => { trackEvent("carousel", "next_image", `image_${activeImage + 1}`); nextImage(); }} style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", width: 34, height: 34, borderRadius: "50%", border: "none", background: "rgba(255,255,255,0.95)", boxShadow: "0 4px 10px rgba(0,0,0,0.12)", cursor: "pointer", fontSize: 24, color: headingColor, lineHeight: 1 }}>›</button>
-                </div>
-              </div>
-
-              <div style={{ display: "flex", justifyContent: "center", gap: 8, marginTop: 12 }}>
-                {galleryImages.map((_, index) => (
-                  <button key={index} type="button" onClick={() => { trackEvent("carousel", "dot_click", `image_${index + 1}`); setActiveImage(index); }} style={{ width: 8, height: 8, borderRadius: "50%", background: index === activeImage ? headingColor : "#83889a", border: "none", cursor: "pointer" }} />
-                ))}
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 10, marginTop: 14 }}>
-                {galleryImages.map((src, index) => (
-                  <button key={src} type="button" onClick={() => { trackEvent("carousel", "thumbnail_click", `image_${index + 1}`); setActiveImage(index); }} style={{ aspectRatio: "1 / 1", borderRadius: 10, border: index === activeImage ? "2px solid #f26a21" : "1px solid #d8d8de", background: "#fff", cursor: "pointer", padding: 0, overflow: "hidden" }}>
-                    <ImageOrPlaceholder src={src} alt={`Thumbnail ${index + 1}`} fallback={`Bild ${index + 1}`} />
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div style={{ paddingTop: 4 }}>
-              <h2 style={{ fontSize: 33, marginTop: 0, marginBottom: 14, color: headingColor, lineHeight: 1.08, fontWeight: 900 }}>Wählen Sie Ihr Angebot</h2>
-              {offers.map((offer) => {
-                const active = selectedOffer === offer.key;
-                return (
-                  <button
-                    key={offer.key}
-                    type="button"
-                    onClick={() => {
-                      trackEvent("offers", "select_offer", offer.title, offer.price, { offer_key: offer.key });
-                      setSelectedOffer(offer.key);
-                      setCtaError("");
-                    }}
+              <div style={{ marginTop: 26, display: "grid", gap: 12 }}>
+                {[
+                  "Midea Portasplit 3,5 kW Klimagerät",
+                  "In wenigen Minuten einsatzbereit, ohne Fachinstallation",
+                  "Sofort lieferbar",
+                  "Lieferung bis zum Aufstellort",
+                  "Inklusive oder exklusive 150 Euro Wien Energie-Stromgutschein*",
+                ].map((item) => (
+                  <div
+                    key={item}
                     style={{
-                      width: "100%",
-                      textAlign: "left",
-                      background: "#fff",
-                      borderRadius: 16,
-                      padding: offer.badge ? "18px 18px 16px" : "16px 18px",
-                      marginBottom: 12,
-                      border: active ? `1.5px solid ${headingColor}` : `1px solid ${cardBorder}`,
-                      boxShadow: active ? "none" : "0 8px 18px rgba(0,0,0,0.03)",
-                      cursor: "pointer",
-                      color: headingColor,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 12,
+                      color: bodyColor,
+                      fontSize: 17,
                     }}
                   >
-                    {offer.badge ? <SpecialBadge label={offer.badge} /> : null}
-                    <div style={{ fontSize: offer.badge ? 23 : 18, lineHeight: 1.22, fontWeight: 900, marginTop: offer.badge ? 12 : 0, maxWidth: 380 }}>{offer.title}</div>
-                    <div style={{ fontSize: offer.badge ? 25 : 22, fontWeight: 900, marginTop: 8 }}>{offer.price} Euro</div>
-                    <div style={{ color: "#7a7f8c", marginTop: 2, fontSize: 13 }}>einmalig</div>
-                    {offer.includedText ? (
-                      <div style={{ background: "#f3f2fb", border: "1px solid #d8d5ee", borderRadius: 10, padding: 12, marginTop: 14 }}>
-                        <div style={{ fontWeight: 800, fontSize: 13, display: "flex", alignItems: "center", gap: 8 }}>
-                          <GiftIcon /> <span>{offer.includedText}</span>
-                        </div>
-                        <div style={{ marginTop: 6, color: "#73788a", lineHeight: 1.55, fontSize: 13 }}>{offer.hint}</div>
-                      </div>
-                    ) : null}
-                    <div style={{ display: "grid", gap: 10, marginTop: 14, color: mutedText }}>
-                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}><CheckCircleIcon size={18} /><span style={{ fontSize: 13 }}>2 Jahre Garantie</span></div>
-                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}><InfoCircleIcon size={16} /><span style={{ fontSize: 13 }}>Gültig bis 31.07.2026, nur solange der Vorrat reicht.</span></div>
-                    </div>
-                  </button>
-                );
-              })}
-
-              <div style={{ background: "#fff", borderRadius: 14, border: `1px solid ${cardBorder}`, overflow: "hidden", marginBottom: 16, boxShadow: "0 8px 18px rgba(0,0,0,0.03)" }}>
-                <button type="button" onClick={() => { trackEvent("offers", "toggle_tip", tipOpen ? "close" : "open"); setTipOpen((prev) => !prev); }} style={{ width: "100%", background: "#fff", border: "none", padding: "16px 18px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", fontWeight: 800, color: headingColor, fontSize: 16 }}>
-                  <span style={{ display: "flex", alignItems: "center", gap: 10 }}><InfoCircleIcon />Tipp</span>
-                  <span style={{ fontSize: 18 }}>{tipOpen ? "⌃" : "⌄"}</span>
-                </button>
-                {tipOpen ? <div style={{ padding: "0 18px 18px", color: "#666", lineHeight: 1.55, fontSize: 13 }}>Eine fixe Installation ist für Sommerfrische nicht nötig. In einzelnen Fällen kann es sinnvoll sein, vorab kurz auf eigene Verantwortung mit der Hausverwaltung oder Vermietung zu sprechen, ob es besondere Vorgaben in Ihrem Wohnhaus gibt.</div> : null}
+                    <CheckCircleIcon />
+                    <span>{item}</span>
+                  </div>
+                ))}
               </div>
 
-              <button type="button" onClick={handleContinueToCheckout} disabled={busy || !selected} style={{ width: "100%", background: headingColor, color: "#fff", border: "none", borderRadius: 999, padding: "17px 24px", fontWeight: 900, fontSize: 18, cursor: "pointer", opacity: busy || !selected ? 0.82 : 1 }}>
-                {busy ? "Wird vorbereitet..." : "Weiter zur Kasse"}
+              <div
+                style={{
+                  marginTop: 18,
+                  color: mutedColor,
+                  fontSize: 14,
+                }}
+              >
+                * 150-Euro-Gutschein nur für Wien Energie-Stromkund*innen
+                einlösbar.
+              </div>
+
+              <button type="button" onClick={goToCheckout} style={{ ...primaryCta, marginTop: 28 }}>
+                Jetzt bestellen
               </button>
-              {ctaError ? <div style={{ marginTop: 12, color: "#c62828", fontWeight: 700, fontSize: 14 }}>{ctaError}</div> : null}
+            </div>
+
+            <div>
+              <div
+                style={{
+                  background: "#fff",
+                  borderRadius: 18,
+                  overflow: "hidden",
+                  boxShadow: "0 12px 30px rgba(0,0,0,0.04)",
+                }}
+              >
+                <img
+                  src="/placeholders/hero-couple.jpg"
+                  alt="Sommerfrische Hero"
+                  style={{
+                    display: "block",
+                    width: "100%",
+                    height: 400,
+                    objectFit: "cover",
+                  }}
+                />
+              </div>
             </div>
           </div>
         </section>
 
-        <section style={{ ...pageWrap, paddingBottom: sectionGap }}>
-          <h2 style={{ textAlign: "center", fontSize: 28, color: headingColor, marginBottom: 10, fontWeight: 900 }}>Die Midea Portasplit 3,5 kW</h2>
-          <p style={{ textAlign: "center", color: "#7b6f63", maxWidth: 700, margin: "0 auto", lineHeight: 1.58, fontSize: 15 }}>
-            Eine Einheit drinnen, eine draußen – verbunden durch einen schmalen Schlauch durch gekippte Fenster. Das mitgelieferte Set dichtet alles sauber ab. Echte Split-Kühlung, ganz ohne Bohren.
-          </p>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 14, marginTop: 26, maxWidth: 680, marginInline: "auto" }}>
-            {specs.map((item) => (
-              <div key={item.title} style={{ background: "#fff", borderRadius: 14, padding: "18px 14px", boxShadow: "0 8px 20px rgba(0,0,0,0.03)", textAlign: "center", minHeight: 112 }}>
-                <div style={{ display: "flex", justifyContent: "center" }}>{item.icon}</div>
-                <div style={{ fontWeight: 900, fontSize: 17, marginTop: 10, color: headingColor }}>{item.title}</div>
-                <div style={{ color: mutedText, marginTop: 6, lineHeight: 1.45, fontSize: 12 }}>{item.text}</div>
-              </div>
-            ))}
-          </div>
-          <div style={{ marginTop: 12, color: "#8b8f9b", textAlign: "center", fontSize: 12 }}>Im Vergleich zu herkömmlichen Mobilgeräten: 4× stärkere Kühlleistung, deutlich leiser, höhere Effizienz.</div>
-        </section>
+        <section style={{ padding: "44px 0 84px" }}>
+          <div
+            style={{
+              maxWidth: 1040,
+              margin: "0 auto",
+              padding: "0 32px",
+              display: "grid",
+              gridTemplateColumns: "1.08fr 0.92fr",
+              gap: 36,
+              alignItems: "start",
+            }}
+          >
+            <div>
+              <h2
+                style={{
+                  margin: 0,
+                  color: headingColor,
+                  fontSize: 28,
+                  fontWeight: 800,
+                }}
+              >
+                Jetzt Sommerfrische bestellen
+              </h2>
 
-        <section style={{ ...pageWrap, paddingBottom: sectionGap - 8 }}>
-          <h2 style={{ textAlign: "center", fontSize: 28, color: headingColor, marginBottom: 28, fontWeight: 900 }}>Sommerfrische Vorteile</h2>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 18 }}>
-            {benefits.map((item) => (
-              <div key={item.title} style={{ background: "#fff", borderRadius: 16, padding: "14px 16px 18px", minHeight: 150, border: item.special ? `1.5px solid ${headingColor}` : "1px solid #ececf2", boxShadow: item.special ? "none" : "0 8px 20px rgba(0,0,0,0.03)" }}>
-                {item.special ? <div style={{ marginBottom: 16 }}><SpecialBadge label={item.badge || "SOMMERFRISCHE SPEZIAL"} /></div> : <div style={{ height: 30, marginBottom: 16 }} />}
-                <div style={{ color: headingColor, display: "flex" }}>{item.icon}</div>
-                <div style={{ marginTop: 14, color: headingColor, fontWeight: 900, fontSize: 16, lineHeight: 1.35 }}>{item.title}</div>
-                <div style={{ marginTop: 10, color: mutedText, lineHeight: 1.6, fontSize: 14 }}>{item.text}</div>
+              <div
+                style={{
+                  marginTop: 12,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  color: headingColor,
+                  fontWeight: 800,
+                  fontSize: 17,
+                }}
+              >
+                <Zap size={16} color={headingColor} strokeWidth={2.2} />
+                <span>Kühlung + Wien Energie-Stromgutschein — alles in einem Paket</span>
               </div>
-            ))}
-          </div>
-          <div style={{ marginTop: 16, textAlign: "center", fontSize: 16, fontWeight: 900, color: headingColor, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}><CheckCircleIcon /> Sofort lieferbar</div>
-        </section>
 
-        <section style={{ ...pageWrap, paddingBottom: sectionGap - 8 }}>
-          <h2 style={{ textAlign: "center", fontSize: 26, color: headingColor, lineHeight: 1.24, fontWeight: 900, margin: 0 }}>Ein Klimagerät bekommen Sie überall.<br />150 Euro Stromgutschein dazu nur bei uns.</h2>
-          <p style={{ textAlign: "center", color: mutedText, marginTop: 14, fontSize: 15 }}>Unsere Sommerfrische kühlt nicht nur Ihre Wohnung. Sie senkt auch Ihre Stromrechnung bei uns.</p>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18, marginTop: 28, maxWidth: 750, marginInline: "auto" }}>
-            <div style={{ background: "#fff", borderRadius: 16, padding: 18, border: `1px solid ${cardBorder}`, minHeight: 170 }}>
-              <div style={{ fontWeight: 800, color: "#5d6476", marginBottom: 16, fontSize: 16 }}>Andere Anbieter</div>
-              <div style={{ display: "grid", gap: 12, color: "#5d6476", fontSize: 15 }}>
-                <div style={{ display: "flex", gap: 10, alignItems: "center" }}><CheckCircleIcon /><span>Mobiles Klimagerät</span></div>
-                <div style={{ display: "flex", gap: 10, alignItems: "center" }}><CheckCircleIcon /><span>Lieferung</span></div>
-                <div style={{ display: "flex", gap: 10, alignItems: "center" }}><span style={{ color: "#999", fontSize: 18, lineHeight: 1 }}>✕</span><span>150 Euro Wien Energie-Stromgutschein</span></div>
+              <p
+                style={{
+                  marginTop: 10,
+                  color: bodyColor,
+                  fontSize: 16,
+                  lineHeight: 1.55,
+                  maxWidth: 560,
+                }}
+              >
+                Sommerfrische ist Ihr Komplettpaket gegen die Hitze daheim. Das
+                mobile Split-Klimagerät Midea Portasplit 3,5 kW gibt's inklusive
+                oder exklusive Wien Energie-Stromgutschein zum Top-Preis!
+              </p>
+
+              <div
+                style={{
+                  marginTop: 18,
+                  background: "#fff",
+                  borderRadius: 18,
+                  overflow: "hidden",
+                  boxShadow: "0 10px 24px rgba(0,0,0,0.04)",
+                  border: "1px solid #ececf2",
+                }}
+              >
+                <div
+                  style={{
+                    background: headingColor,
+                    color: "#fff",
+                    display: "grid",
+                    gridTemplateColumns: "repeat(4, 1fr)",
+                    gap: 8,
+                    padding: "18px 20px",
+                    fontSize: 15,
+                    fontWeight: 800,
+                    lineHeight: 1.45,
+                    textAlign: "center",
+                  }}
+                >
+                  <div>
+                    A++ Kühlen
+                    <br />
+                    A+ Heizen
+                  </div>
+                  <div>
+                    Nur 39 dB(A)
+                    <br />
+                    im Silent-Modus
+                  </div>
+                  <div>
+                    518 x 340
+                    <br />x 646 mm
+                    <br />
+                    Innengerät
+                  </div>
+                  <div>
+                    42 kg
+                    <br />
+                    Gesamtgewicht
+                  </div>
+                </div>
+
+                <div style={{ position: "relative", minHeight: 470 }}>
+                  <img
+                    src={gallery[currentSlide].src}
+                    alt={gallery[currentSlide].alt}
+                    style={{
+                      display: "block",
+                      width: "100%",
+                      height: 470,
+                      objectFit: "cover",
+                      objectPosition: "center",
+                    }}
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setCurrentSlide((prev) =>
+                        prev === 0 ? gallery.length - 1 : prev - 1
+                      )
+                    }
+                    style={{ ...carouselArrowBtn, left: 14 }}
+                    aria-label="Vorheriges Bild"
+                  >
+                    <ChevronLeft size={18} strokeWidth={2.2} />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setCurrentSlide((prev) =>
+                        prev === gallery.length - 1 ? 0 : prev + 1
+                      )
+                    }
+                    style={{ ...carouselArrowBtn, right: 14 }}
+                    aria-label="Nächstes Bild"
+                  >
+                    <ChevronRight size={18} strokeWidth={2.2} />
+                  </button>
+                </div>
+              </div>
+
+              <div
+                style={{
+                  marginTop: 14,
+                  display: "flex",
+                  justifyContent: "center",
+                  gap: 8,
+                }}
+              >
+                {gallery.map((_, index) => (
+                  <button
+                    key={index}
+                    type="button"
+                    onClick={() => setCurrentSlide(index)}
+                    aria-label={`Zu Bild ${index + 1}`}
+                    style={{
+                      width: index === currentSlide ? 10 : 8,
+                      height: index === currentSlide ? 10 : 8,
+                      borderRadius: "50%",
+                      border: "none",
+                      background: index === currentSlide ? headingColor : "#7b7b7b",
+                      cursor: "pointer",
+                      padding: 0,
+                    }}
+                  />
+                ))}
+              </div>
+
+              <div
+                style={{
+                  marginTop: 18,
+                  display: "grid",
+                  gridTemplateColumns: "repeat(5, 1fr)",
+                  gap: 10,
+                }}
+              >
+                {gallery.map((item, index) => (
+                  <button
+                    key={item.thumb}
+                    type="button"
+                    onClick={() => setCurrentSlide(index)}
+                    style={{
+                      borderRadius: 10,
+                      overflow: "hidden",
+                      border:
+                        index === currentSlide
+                          ? "2px solid #ef7d32"
+                          : "1px solid #ddd",
+                      padding: 0,
+                      background: "#fff",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <img
+                      src={item.thumb}
+                      alt={item.alt}
+                      style={{
+                        display: "block",
+                        width: "100%",
+                        height: 78,
+                        objectFit: "cover",
+                      }}
+                    />
+                  </button>
+                ))}
               </div>
             </div>
-            <div style={{ background: "#fff", borderRadius: 16, padding: 18, border: `1.5px solid ${headingColor}`, position: "relative", minHeight: 170 }}>
-              <div style={{ position: "absolute", top: -12, left: 16 }}><SpecialBadge label="IHR VORTEIL" /></div>
-              <div style={{ fontWeight: 900, color: headingColor, marginTop: 10, marginBottom: 16, fontSize: 18 }}>Sommerfrische</div>
-              <div style={{ display: "grid", gap: 12, color: "#5d6476", fontSize: 15 }}>
-                <div style={{ display: "flex", gap: 10, alignItems: "center" }}><CheckCircleIcon /><span>Mobiles Split-Klimagerät</span></div>
-                <div style={{ display: "flex", gap: 10, alignItems: "center" }}><CheckCircleIcon /><span>Lieferung in die Wohnung</span></div>
-                <div style={{ display: "flex", gap: 10, alignItems: "flex-start", color: headingColor, fontWeight: 900 }}><CheckCircleIcon /><span>Inklusive oder exklusive 150 Euro Wien Energie-Stromgutschein*</span></div>
+
+            <div>
+              <h2
+                style={{
+                  margin: 0,
+                  color: headingColor,
+                  fontSize: 28,
+                  fontWeight: 800,
+                }}
+              >
+                Wählen Sie Ihr Angebot
+              </h2>
+
+              <div style={{ marginTop: 14, display: "grid", gap: 14 }}>
+                <OfferCard
+                  selected={selectedOffer === "stromvorteil"}
+                  badge="LAUNCH-ANGEBOT"
+                  title="Midea Portasplit 3,5 kW + Strom-Vorteil"
+                  price="949 Euro"
+                  hasGift
+                  description="Gutschein nur für Wien Energie-Stromkund*innen einlösbar. Auf andere Personen übertragbar und unbefristet gültig."
+                  onClick={() => setSelectedOffer("stromvorteil")}
+                />
+
+                <OfferCard
+                  selected={selectedOffer === "solo"}
+                  title="Midea Portasplit 3,5 kW ohne Strom-Vorteil"
+                  price="849 Euro"
+                  onClick={() => setSelectedOffer("solo")}
+                />
+
+                <div
+                  style={{
+                    background: "#fff",
+                    borderRadius: 14,
+                    boxShadow: "0 8px 24px rgba(0,0,0,0.04)",
+                    overflow: "hidden",
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setTipOpen((v) => !v)}
+                    style={{
+                      width: "100%",
+                      background: "#fff",
+                      border: "none",
+                      padding: "18px 18px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      cursor: "pointer",
+                      color: headingColor,
+                      fontWeight: 800,
+                      fontSize: 18,
+                    }}
+                  >
+                    <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <CircleHelp size={17} color={headingColor} strokeWidth={2} />
+                      Tipp
+                    </span>
+                    {tipOpen ? (
+                      <ChevronUp size={18} color={headingColor} />
+                    ) : (
+                      <ChevronDown size={18} color={headingColor} />
+                    )}
+                  </button>
+
+                  {tipOpen ? (
+                    <div
+                      style={{
+                        padding: "0 18px 18px",
+                        color: bodyColor,
+                        fontSize: 15,
+                        lineHeight: 1.6,
+                      }}
+                    >
+                      Eine fixe Installation ist für Sommerfrische nicht nötig. In
+                      einzelnen Fällen kann es sinnvoll sein, vorab kurz auf eigene
+                      Verantwortung mit der Hausverwaltung oder Vermietung zu
+                      sprechen, ob es besondere Vorgaben im Wohnhaus gibt.
+                    </div>
+                  ) : null}
+                </div>
+
+                <button type="button" onClick={goToCheckout} style={widePrimaryBtn}>
+                  Weiter zur Kasse
+                </button>
               </div>
-              <div style={{ marginTop: 12, color: "#7b7b85", fontSize: 12 }}>* 150-Euro-Gutschein nur für Wien Energie-Stromkund*innen einlösbar.</div>
             </div>
           </div>
-          <div style={{ textAlign: "center", marginTop: 20 }}>
-            <button
-              type="button"
-              onClick={() => {
-                trackEvent("promo", "stromgutschein_cta_click", "stromvorteil");
-                setSelectedOffer("stromvorteil");
-                setCtaError("");
-                document.getElementById("angebote")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        </section>
+
+        <section style={{ padding: "56px 0 72px" }}>
+          <div style={{ maxWidth: 1040, margin: "0 auto", padding: "0 32px" }}>
+            <SectionTitle
+              title="Die Midea Portasplit 3,5 kW"
+              subtitle="Eine Einheit drinnen, eine draußen – verbunden durch einen schmalen Schlauch durchs gekippte Fenster. Das mitgelieferte Set dichtet alles sauber ab. Echte Split-Kühlung, ganz ohne Bohren."
+            />
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(4, 1fr)",
+                gap: 16,
+                maxWidth: 760,
+                margin: "0 auto",
               }}
-              style={{ background: headingColor, color: "#fff", border: "none", borderRadius: 999, padding: "15px 34px", fontWeight: 900, fontSize: 16, cursor: "pointer" }}
             >
-              Jetzt Wien Energie-Stromgutschein sichern
-            </button>
+              {specs.map((item) => (
+                <div
+                  key={item.title}
+                  style={{
+                    background: "#fff",
+                    borderRadius: 16,
+                    padding: "22px 18px",
+                    textAlign: "center",
+                    boxShadow: "0 10px 24px rgba(0,0,0,0.04)",
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "center" }}>
+                    <item.icon size={24} color={headingColor} strokeWidth={1.9} />
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 14,
+                      color: headingColor,
+                      fontWeight: 800,
+                      fontSize: 18,
+                    }}
+                  >
+                    {item.title}
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 8,
+                      color: bodyColor,
+                      fontSize: 15,
+                      lineHeight: 1.45,
+                    }}
+                  >
+                    {item.text}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div
+              style={{
+                marginTop: 18,
+                textAlign: "center",
+                color: bodyColor,
+                fontSize: 15,
+              }}
+            >
+              Im Vergleich zu herkömmlichen Mobilgeräten: 4× stärkere
+              Kühlleistung, deutlich leiser, höhere Effizienz.
+            </div>
           </div>
         </section>
 
-        <section style={{ ...pageWrap, paddingBottom: sectionGap - 16 }}>
-          <h2 style={{ textAlign: "center", fontSize: 28, color: headingColor, marginBottom: 28, fontWeight: 900 }}>So funktioniert Sommerfrische</h2>
-          <div style={{ position: "relative", maxWidth: 900, marginInline: "auto", paddingTop: 4 }}>
-            <div style={{ position: "absolute", left: 112, right: 112, top: 26, height: 2, background: "#d8dbe5", zIndex: 0 }} />
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 14, position: "relative", zIndex: 1 }}>
-              {steps.map(([num, title, text]) => (
-                <div key={num} style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center" }}>
-                  <div style={{ width: 48, height: 48, borderRadius: "50%", background: headingColor, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, fontSize: 17, boxShadow: `0 0 0 8px ${surface}` }}>{num}</div>
-                  <div style={{ marginTop: 18, fontSize: 22, fontWeight: 900, color: headingColor }}>{title}</div>
-                  <div style={{ marginTop: 9, color: mutedText, lineHeight: 1.55, fontSize: 14, maxWidth: 230 }}>{text}</div>
+        <section style={{ padding: "44px 0 72px" }}>
+          <div style={{ maxWidth: 1040, margin: "0 auto", padding: "0 32px" }}>
+            <SectionTitle title="Sommerfrische Vorteile" />
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(4, 1fr)",
+                gap: 18,
+              }}
+            >
+              {benefits.map((item) => (
+                <div
+                  key={item.title}
+                  style={{
+                    background: "#fff",
+                    borderRadius: 16,
+                    border: item.highlighted ? `1.5px solid ${cardBorder}` : "none",
+                    boxShadow: item.highlighted
+                      ? "none"
+                      : "0 10px 24px rgba(0,0,0,0.04)",
+                    padding: "18px 18px 20px",
+                    position: "relative",
+                    minHeight: 148,
+                  }}
+                >
+                  {item.badge ? (
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: -12,
+                        left: 14,
+                        background: headingColor,
+                        color: "#fff",
+                        fontSize: 11,
+                        fontWeight: 800,
+                        padding: "6px 13px",
+                        borderRadius: 999,
+                        letterSpacing: 0.3,
+                      }}
+                    >
+                      {item.badge}
+                    </div>
+                  ) : null}
+
+                  <div style={{ color: headingColor, display: "flex" }}>
+                    <item.icon size={22} color={headingColor} strokeWidth={1.8} />
+                  </div>
+
+                  <div
+                    style={{
+                      marginTop: 16,
+                      color: headingColor,
+                      fontWeight: 800,
+                      fontSize: 17,
+                      lineHeight: 1.35,
+                    }}
+                  >
+                    {item.title}
+                  </div>
+
+                  <div
+                    style={{
+                      marginTop: 10,
+                      color: bodyColor,
+                      fontSize: 15,
+                      lineHeight: 1.55,
+                    }}
+                  >
+                    {item.text}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div
+              style={{
+                marginTop: 16,
+                textAlign: "center",
+                color: headingColor,
+                fontWeight: 800,
+                fontSize: 18,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+              }}
+            >
+              <CheckCircleIcon size={22} />
+              Sofort lieferbar
+            </div>
+          </div>
+        </section>
+
+        <section style={{ padding: "56px 0 84px" }}>
+          <div style={{ maxWidth: 1040, margin: "0 auto", padding: "0 32px" }}>
+            <SectionTitle
+              title="Ein Klimagerät bekommen Sie überall. 150 Euro Stromgutschein dazu nur bei uns."
+              subtitle="Unsere Sommerfrische kühlt nicht nur Ihre Wohnung. Sie senkt auch Ihre Stromrechnung bei uns."
+            />
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: 20,
+                maxWidth: 760,
+                margin: "0 auto",
+              }}
+            >
+              <div
+                style={{
+                  background: "#fff",
+                  borderRadius: 16,
+                  border: "1px solid #dbdde6",
+                  padding: "22px 18px",
+                }}
+              >
+                <div
+                  style={{
+                    color: "#646a78",
+                    fontWeight: 800,
+                    fontSize: 17,
+                    marginBottom: 14,
+                  }}
+                >
+                  Andere Anbieter
+                </div>
+
+                <div style={{ display: "grid", gap: 12 }}>
+                  {["Mobiles Klimagerät", "Lieferung"].map((item) => (
+                    <div
+                      key={item}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 10,
+                        color: bodyColor,
+                        fontSize: 16,
+                      }}
+                    >
+                      <CheckCircleIcon size={20} />
+                      <span>{item}</span>
+                    </div>
+                  ))}
+
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                      color: bodyColor,
+                      fontSize: 16,
+                    }}
+                  >
+                    <X size={16} color="#999" strokeWidth={2.2} />
+                    <span>150 Euro Wien Energie-Stromgutschein</span>
+                  </div>
+                </div>
+              </div>
+
+              <div
+                style={{
+                  background: "#fff",
+                  borderRadius: 16,
+                  border: `1.5px solid ${cardBorder}`,
+                  padding: "18px 18px 20px",
+                  position: "relative",
+                }}
+              >
+                <div
+                  style={{
+                    position: "absolute",
+                    top: -12,
+                    left: 14,
+                    background: headingColor,
+                    color: "#fff",
+                    fontSize: 11,
+                    fontWeight: 800,
+                    padding: "6px 13px",
+                    borderRadius: 999,
+                    letterSpacing: 0.3,
+                  }}
+                >
+                  IHR VORTEIL
+                </div>
+
+                <div
+                  style={{
+                    color: headingColor,
+                    fontWeight: 800,
+                    fontSize: 17,
+                    marginBottom: 16,
+                  }}
+                >
+                  Sommerfrische
+                </div>
+
+                <div style={{ display: "grid", gap: 12 }}>
+                  {[
+                    "Mobiles Split-Klimagerät",
+                    "Lieferung in die Wohnung",
+                    "Inklusive oder exklusive 150 Euro Wien Energie-Stromgutschein*",
+                  ].map((item) => (
+                    <div
+                      key={item}
+                      style={{
+                        display: "flex",
+                        alignItems: "flex-start",
+                        gap: 10,
+                        color: item.includes("150 Euro") ? headingColor : bodyColor,
+                        fontSize: 16,
+                        fontWeight: item.includes("150 Euro") ? 800 : 400,
+                        lineHeight: 1.45,
+                      }}
+                    >
+                      <CheckCircleIcon size={20} />
+                      <span>{item}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div
+                  style={{
+                    marginTop: 14,
+                    color: mutedColor,
+                    fontSize: 14,
+                  }}
+                >
+                  * 150-Euro-Gutschein nur für Wien Energie-Stromkund*innen
+                  einlösbar.
+                </div>
+              </div>
+            </div>
+
+            <div style={{ textAlign: "center", marginTop: 20 }}>
+              <button type="button" onClick={() => setSelectedOffer("stromvorteil")} style={primaryCta}>
+                Jetzt Wien Energie-Stromgutschein sichern
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section style={{ padding: "34px 0 70px" }}>
+          <div style={{ maxWidth: 1040, margin: "0 auto", padding: "0 32px" }}>
+            <SectionTitle title="So funktioniert Sommerfrische" />
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(3, 1fr)",
+                gap: 18,
+                marginTop: 20,
+              }}
+            >
+              {[
+                {
+                  n: "01",
+                  title: "Bestellen",
+                  text: "Online im Webshop Ihr Sommerfrische-Paket auswählen und bestellen.",
+                },
+                {
+                  n: "02",
+                  title: "Liefern lassen",
+                  text: "Lieferung bis zum Aufstellort – bequem zu Ihnen nach Hause.",
+                },
+                {
+                  n: "03",
+                  title: "Loskühlen",
+                  text: "Anschließen, einschalten, fertig. Kein*e Techniker*in nötig.",
+                },
+              ].map((step, index) => (
+                <div
+                  key={step.n}
+                  style={{
+                    textAlign: "center",
+                    position: "relative",
+                    paddingTop: 10,
+                  }}
+                >
+                  {index < 2 ? (
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: 28,
+                        right: "-9%",
+                        width: "58%",
+                        height: 1.5,
+                        background: "#d7d8de",
+                      }}
+                    />
+                  ) : null}
+
+                  <div
+                    style={{
+                      width: 56,
+                      height: 56,
+                      borderRadius: "50%",
+                      background: headingColor,
+                      color: "#fff",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontWeight: 800,
+                      fontSize: 24,
+                      margin: "0 auto 18px",
+                    }}
+                  >
+                    {step.n}
+                  </div>
+
+                  <div
+                    style={{
+                      color: headingColor,
+                      fontWeight: 800,
+                      fontSize: 21,
+                    }}
+                  >
+                    {step.title}
+                  </div>
+
+                  <div
+                    style={{
+                      marginTop: 10,
+                      color: bodyColor,
+                      fontSize: 16,
+                      lineHeight: 1.55,
+                      maxWidth: 280,
+                      marginInline: "auto",
+                    }}
+                  >
+                    {step.text}
+                  </div>
                 </div>
               ))}
             </div>
           </div>
         </section>
 
-        <section style={{ ...pageWrap, paddingBottom: 0 }}>
-          <h2 style={{ textAlign: "center", fontSize: 28, color: headingColor, marginBottom: 26, fontWeight: 900 }}>Häufig gestellte Fragen</h2>
-          <div style={{ maxWidth: 930, margin: "0 auto" }}><FaqAccordion items={faqItems} /></div>
-        </section>
+        <FaqAccordion groups={faqGroups} />
 
-        <Footer />
+        <footer style={{ background: "#dcdcdc", padding: "54px 0 24px" }}>
+          <div style={{ maxWidth: 1040, margin: "0 auto", padding: "0 32px" }}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1.1fr 0.8fr 0.9fr",
+                gap: 24,
+                alignItems: "start",
+              }}
+            >
+              <LogoImage
+                src="/placeholders/logo-wienenergie.svg"
+                alt="Wien Energie"
+                width={170}
+              />
 
-        {selected ? (
-          <div style={{ position: "fixed", left: 0, right: 0, bottom: 0, background: "rgba(255,255,255,0.98)", borderTop: "1px solid #d8d8d8", backdropFilter: "blur(8px)", zIndex: 50 }}>
-            <div style={{ ...pageWrap, paddingTop: 10, paddingBottom: 10, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 20 }}>
               <div>
-                <div style={{ color: "#666", fontSize: 13, marginBottom: 4 }}>{selected.title}</div>
-                <div style={{ color: headingColor, fontWeight: 900, fontSize: 24 }}>{selected.price} Euro{selected.key === "stromvorteil" ? "*" : ""}</div>
-                {selected.key === "stromvorteil" ? <div style={{ color: "#777", fontSize: 13 }}>* 150-Euro-Gutschein nur für Wien Energie-Stromkund*innen einlösbar.</div> : null}
+                <div style={footerHeading}>Rechtliches</div>
+                <div style={footerLinkList}>
+                  <Link to="/impressum" style={footerLink}>Impressum</Link>
+                  <Link to="/datenschutz" style={footerLink}>Datenschutz</Link>
+                  <Link to="/agb" style={footerLink}>AGB</Link>
+                  <Link to="/widerrufsbelehrung" style={footerLink}>Widerrufsbelehrung</Link>
+                  <Link to="/barrierefreiheit" style={footerLink}>Barrierefreiheit</Link>
+                </div>
               </div>
-              <button type="button" onClick={handleContinueToCheckout} disabled={busy} style={{ border: "none", borderRadius: 999, background: headingColor, color: "#fff", fontWeight: 900, fontSize: 18, padding: "15px 30px", cursor: "pointer", opacity: busy ? 0.75 : 1 }}>{busy ? "Bitte warten..." : "Weiter zur Kasse"}</button>
+
+              <div>
+                <div style={footerHeading}>Kontakt</div>
+                <div style={{ color: headingColor, fontSize: 15, lineHeight: 1.75 }}>
+                  Wien Energie GmbH
+                  <br />
+                  Thomas-Klestil-Platz 14
+                  <br />
+                  1030 Wien
+                  <br />
+                  Telefon: +43 1 4004 81880
+                  <br />
+                  Telefonzeiten: Mo–Fr 09:00–17:00 Uhr
+                  <br />
+                  sommerfrische@wienenergie.at
+                </div>
+              </div>
+            </div>
+
+            <div
+              style={{
+                marginTop: 36,
+                borderTop: "1px solid #ececec",
+                paddingTop: 18,
+                color: headingColor,
+                fontSize: 13,
+              }}
+            >
+              Gültig bis 31.07.2026, nur solange der Vorrat reicht.
+            </div>
+            <div
+              style={{
+                marginTop: 8,
+                color: headingColor,
+                fontSize: 13,
+                fontWeight: 700,
+              }}
+            >
+              © 2026 Sommerfrische – powered by Wien Energie GmbH. Alle Rechte
+              vorbehalten.
             </div>
           </div>
-        ) : null}
+        </footer>
+
+        <div
+          style={{
+            position: "sticky",
+            bottom: 0,
+            zIndex: 40,
+            background: "#fff",
+            borderTop: "1px solid #d8d8de",
+            boxShadow: "0 -2px 14px rgba(0,0,0,0.04)",
+          }}
+        >
+          <div
+            style={{
+              maxWidth: 1200,
+              margin: "0 auto",
+              padding: "14px 24px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 20,
+            }}
+          >
+            <div>
+              <div style={{ color: mutedColor, fontSize: 14 }}>{offerTitle}</div>
+              <div
+                style={{
+                  color: headingColor,
+                  fontWeight: 800,
+                  fontSize: 24,
+                  lineHeight: 1.1,
+                  marginTop: 2,
+                }}
+              >
+                {offerPrice} Euro*
+              </div>
+              {offerFootnote ? (
+                <div style={{ color: mutedColor, fontSize: 13, marginTop: 4 }}>
+                  {offerFootnote}
+                </div>
+              ) : null}
+            </div>
+
+            <button type="button" onClick={goToCheckout} style={primaryCta}>
+              Weiter zur Kasse
+            </button>
+          </div>
+        </div>
       </div>
-    </BrandShell>
+    </div>
   );
 }
+
+function OfferCard({
+  selected,
+  title,
+  price,
+  description,
+  badge,
+  hasGift,
+  onClick,
+}: {
+  selected: boolean;
+  title: string;
+  price: string;
+  description?: string;
+  badge?: string;
+  hasGift?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        background: "#fff",
+        borderRadius: 18,
+        border: selected ? `2px solid ${cardBorder}` : "1px solid #d6d8e1",
+        boxShadow: "0 8px 24px rgba(0,0,0,0.04)",
+        padding: "18px 18px 18px",
+        textAlign: "left",
+        cursor: "pointer",
+        position: "relative",
+      }}
+    >
+      {badge ? (
+        <div
+          style={{
+            position: "absolute",
+            top: -12,
+            left: 18,
+            background: headingColor,
+            color: "#fff",
+            fontSize: 11,
+            fontWeight: 800,
+            padding: "6px 13px",
+            borderRadius: 999,
+            letterSpacing: 0.3,
+          }}
+        >
+          {badge}
+        </div>
+      ) : null}
+
+      <div
+        style={{
+          color: headingColor,
+          fontWeight: 800,
+          fontSize: 20,
+          lineHeight: 1.25,
+        }}
+      >
+        {title}
+      </div>
+
+      <div
+        style={{
+          marginTop: 8,
+          color: headingColor,
+          fontWeight: 800,
+          fontSize: 26,
+        }}
+      >
+        {price}
+      </div>
+
+      <div style={{ marginTop: 2, color: mutedColor, fontSize: 14 }}>
+        einmalig
+      </div>
+
+      {hasGift ? (
+        <div
+          style={{
+            marginTop: 16,
+            background: "#f0effa",
+            borderRadius: 10,
+            border: "1px solid #cfcfe6",
+            padding: "12px 12px",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              gap: 8,
+              alignItems: "flex-start",
+              color: headingColor,
+              fontWeight: 800,
+              fontSize: 14,
+              lineHeight: 1.4,
+            }}
+          >
+            <Gift size={14} color={headingColor} strokeWidth={2} />
+            <span>150 Euro Wien Energie-Stromgutschein inklusive</span>
+          </div>
+
+          {description ? (
+            <div
+              style={{
+                marginTop: 8,
+                color: bodyColor,
+                fontSize: 13,
+                lineHeight: 1.55,
+              }}
+            >
+              {description}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
+      <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            color: bodyColor,
+            fontSize: 14,
+          }}
+        >
+          <CheckCircleIcon size={20} />
+          <span>2 Jahre Garantie</span>
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            color: bodyColor,
+            fontSize: 14,
+          }}
+        >
+          <Clock size={14} color="#5f61b6" strokeWidth={2} />
+          <span>Gültig bis 31.07.2026, nur solange der Vorrat reicht.</span>
+        </div>
+      </div>
+    </button>
+  );
+}
+
+const primaryCta: CSSProperties = {
+  background: "#05057a",
+  color: "#fff",
+  border: "none",
+  borderRadius: 999,
+  padding: "15px 28px",
+  fontWeight: 800,
+  fontSize: 18,
+  cursor: "pointer",
+  boxShadow: "none",
+};
+
+const widePrimaryBtn: CSSProperties = {
+  ...primaryCta,
+  width: "100%",
+  textAlign: "center",
+};
+
+const carouselArrowBtn: CSSProperties = {
+  position: "absolute",
+  top: "50%",
+  transform: "translateY(-50%)",
+  width: 36,
+  height: 36,
+  borderRadius: "50%",
+  border: "none",
+  background: "rgba(255,255,255,0.94)",
+  color: headingColor,
+  cursor: "pointer",
+  boxShadow: "0 6px 14px rgba(0,0,0,0.10)",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+};
+
+const faqGroupBtn: CSSProperties = {
+  width: "100%",
+  background: "#fff",
+  border: "none",
+  padding: "20px 22px",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  cursor: "pointer",
+  color: headingColor,
+  fontWeight: 800,
+  fontSize: 18,
+  textAlign: "left",
+};
+
+const faqItemBtn: CSSProperties = {
+  width: "100%",
+  background: "transparent",
+  border: "none",
+  padding: "10px 0",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  cursor: "pointer",
+  color: headingColor,
+  fontWeight: 800,
+  fontSize: 16,
+  textAlign: "left",
+};
+
+const footerHeading: CSSProperties = {
+  color: headingColor,
+  fontWeight: 800,
+  fontSize: 18,
+  marginBottom: 12,
+};
+
+const footerLinkList: CSSProperties = {
+  display: "grid",
+  gap: 10,
+};
+
+const footerLink: CSSProperties = {
+  color: headingColor,
+  textDecoration: "none",
+  fontSize: 15,
+};
+
+const thStyle: CSSProperties = {
+  color: "#fff",
+  textAlign: "left",
+  fontSize: 14,
+  fontWeight: 800,
+  padding: "12px 14px",
+};
+
+const tdStyleLabel: CSSProperties = {
+  borderBottom: "1px solid #ececf2",
+  padding: "12px 14px",
+  color: headingColor,
+  fontWeight: 700,
+  fontSize: 14,
+  verticalAlign: "top",
+};
+
+const tdStyleValue: CSSProperties = {
+  borderBottom: "1px solid #ececf2",
+  padding: "12px 14px",
+  color: bodyColor,
+  fontSize: 14,
+  verticalAlign: "top",
+};
