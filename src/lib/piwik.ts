@@ -1,4 +1,4 @@
-import PiwikPro, { CustomEvent, DataLayer, PageViews } from "@piwikpro/react-piwik-pro";
+import PiwikPro, { DataLayer, PageViews } from "@piwikpro/react-piwik-pro";
 
 const DEFAULT_SITE_ID = "7a869ec1-2d1e-4866-a58f-67de85df74e8";
 const DEFAULT_CONTAINER_URL = "https://wienenergie.piwik.pro/login";
@@ -15,14 +15,28 @@ function normalizeAccountAddress(input?: string): string {
   }
 }
 
-export const PIWIK_SITE_ID = import.meta.env.VITE_PIWIK_PRO_SITE_ID || DEFAULT_SITE_ID;
-export const PIWIK_CONTAINER_URL = normalizeAccountAddress(import.meta.env.VITE_PIWIK_PRO_CONTAINER_URL || DEFAULT_CONTAINER_URL);
+export const PIWIK_SITE_ID =
+  import.meta.env.VITE_PIWIK_PRO_SITE_ID || DEFAULT_SITE_ID;
+
+export const PIWIK_CONTAINER_URL = normalizeAccountAddress(
+  import.meta.env.VITE_PIWIK_PRO_CONTAINER_URL || DEFAULT_CONTAINER_URL
+);
+
+export type ConsentState = {
+  analytics: boolean;
+  marketing: boolean;
+  functional: boolean;
+};
+
+export const CONSENT_STORAGE_KEY = "sommerfrische_consent";
 
 export function initPiwikPro(): void {
   if (initialized || typeof window === "undefined") return;
+
   try {
     PiwikPro.initialize(PIWIK_SITE_ID, PIWIK_CONTAINER_URL);
     initialized = true;
+
     safePush({
       event: "piwik_initialized",
       piwik_site_id: PIWIK_SITE_ID,
@@ -55,6 +69,11 @@ export function trackPage(path: string, title?: string): void {
   });
 }
 
+/**
+ * IMPORTANT:
+ * - no custom Piwik tracking request for click/button events
+ * - only Data Layer events remain
+ */
 export function trackEvent(
   category: string,
   action: string,
@@ -62,12 +81,6 @@ export function trackEvent(
   value?: number,
   extra?: Record<string, unknown>,
 ): void {
-  try {
-    CustomEvent.trackEvent(category, action, name, value);
-  } catch {
-    // noop
-  }
-
   safePush({
     event: "custom_event",
     custom_event_category: category,
@@ -76,4 +89,33 @@ export function trackEvent(
     custom_event_value: value,
     ...extra,
   });
+}
+
+export function pushConsentState(state: ConsentState) {
+  safePush({
+    event: "consent_state_update",
+    consent_analytics: !!state.analytics,
+    consent_marketing: !!state.marketing,
+    consent_functional: !!state.functional,
+  });
+}
+
+export function saveConsentState(state: ConsentState) {
+  localStorage.setItem(CONSENT_STORAGE_KEY, JSON.stringify(state));
+  pushConsentState(state);
+}
+
+export function loadConsentState(): ConsentState | null {
+  try {
+    const raw = localStorage.getItem(CONSENT_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return {
+      analytics: !!parsed.analytics,
+      marketing: !!parsed.marketing,
+      functional: !!parsed.functional,
+    };
+  } catch {
+    return null;
+  }
 }
