@@ -12,6 +12,7 @@ import AgbPage from "./pages/Agb";
 import WiderrufPage from "./pages/Widerruf";
 import BarrierefreiheitPage from "./pages/Barrierefreiheit";
 import { trackPage } from "./lib/piwik";
+import { ConsentBanner } from "./components/ConsentBanner";
 
 function RouteTracker() {
   const location = useLocation();
@@ -44,6 +45,8 @@ export default function App() {
         <Route path="/widerrufsbelehrung" element={<WiderrufPage />} />
         <Route path="/barrierefreiheit" element={<BarrierefreiheitPage />} />
       </Routes>
+      
+      <ConsentBanner />
     </>
   );
 }
