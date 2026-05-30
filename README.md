@@ -4,7 +4,7 @@ Vite + React + TypeScript frontend matching the new landing-page layout.
 
 ## Run
 ```powershell
-npm install
+npm install 
 copy .env.example .env
 npm run dev
 ```
