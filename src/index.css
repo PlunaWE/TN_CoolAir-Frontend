@@ -1,0 +1,152 @@
+/* ============================================================
+   Wien Energie Design System — CSS Variables
+   ============================================================
+   Diese Datei wird von Tailwind und shadcn/ui-Komponenten
+   referenziert. Werte stammen 1:1 aus tokens.ts.
+
+   Drop-in für Lovable: Inhalt dieser Datei in src/index.css
+   bzw. src/globals.css einfügen (ersetzt das vorhandene
+   :root-Block). HSL-Werte für shadcn-Kompatibilität, HEX für
+   direkte Verwendung in Custom-CSS.
+   ============================================================ */
+
+@import url("https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* ── BRAND ─────────────────────────────────────────────── */
+    --we-brand-primary: #EB6828;
+    --we-brand-secondary: #060460;
+
+    /* ── ACCENTS ───────────────────────────────────────────── */
+    --we-accent-blue: #005797;
+    --we-accent-gold: #F8BE2C;
+    --we-accent-pine-green: #006B5A;
+    --we-accent-magenta: #CD0045;
+
+    /* ── SEMANTIC ──────────────────────────────────────────── */
+    --we-info: #005797;
+    --we-success: #1C6B4B;
+    --we-danger: #B4271F;
+    --we-warning: #CCA720;
+
+    /* ── NEUTRAL SCALE ─────────────────────────────────────── */
+    --we-neutral-10: #1B1B1B;
+    --we-neutral-20: #303030;
+    --we-neutral-30: #474747;
+    --we-neutral-40: #5E5E5E;  /* default text color */
+    --we-neutral-50: #757575;
+    --we-neutral-60: #919191;
+    --we-neutral-70: #ABABAB;
+    --we-neutral-80: #C6C6C6;
+    --we-neutral-90: #E2E2E2;
+    --we-neutral-95: #F1F1F1;
+    --we-neutral-99: #FCFCFC;
+
+    /* ── TEXT / SURFACE ALIASES ────────────────────────────── */
+    --we-text-default: var(--we-neutral-40);
+    --we-text-heading: var(--we-brand-secondary);
+    --we-text-muted: var(--we-neutral-50);
+    --we-text-inverse: #FFFFFF;
+    --we-surface-default: #FFFFFF;
+    --we-surface-muted: var(--we-neutral-99);
+    --we-surface-subtle: var(--we-neutral-95);
+    --we-border: var(--we-neutral-90);
+
+    /* ── SHADOWS ───────────────────────────────────────────── */
+    --we-shadow-card: 0px 22px 45px 0px rgba(3, 0, 0, 0.11);
+    --we-shadow-sm: 0px 1px 2px 0px rgba(3, 0, 0, 0.06);
+    --we-shadow-md: 0px 4px 8px 0px rgba(3, 0, 0, 0.08);
+    --we-shadow-focus: 0 0 0 3px rgba(0, 87, 151, 0.25);
+
+    /* ── RADII ─────────────────────────────────────────────── */
+    --we-radius-sm: 6px;
+    --we-radius-md: 8px;
+    --we-radius-lg: 12px;     /* Cards (explicit) */
+    --we-radius-full: 9999px; /* Buttons */
+
+    /* ── SPACING ───────────────────────────────────────────── */
+    --we-space-component-sm: 8px;
+    --we-space-component-md: 16px;
+    --we-space-component-lg: 24px;
+    --we-space-component-xlg: 32px;
+    --we-space-section-lg-desktop: 40px;
+    --we-space-section-xlg-desktop: 80px;
+    --we-space-section-lg-mobile: 32px;
+    --we-space-section-xlg-mobile: 40px;
+    --we-space-horizontal-md: 32px;
+
+    /* ============================================================
+       shadcn/ui Mapping (HSL ohne Klammern, wie shadcn erwartet)
+       ============================================================ */
+    --background: 0 0% 100%;
+    --foreground: 0 0% 37%;            /* neutral/40 */
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 37%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 37%;
+    --primary: 240 96% 19%;            /* brand-secondary #060460 */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 17 84% 54%;           /* brand-primary #EB6828 */
+    --secondary-foreground: 0 0% 100%;
+    --muted: 0 0% 95%;                 /* neutral/95 */
+    --muted-foreground: 0 0% 46%;      /* neutral/50 */
+    --accent: 205 100% 30%;            /* accent-blue #005797 */
+    --accent-foreground: 0 0% 100%;
+    --destructive: 4 70% 41%;          /* danger #B4271F */
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 89%;                /* neutral/90 */
+    --input: 0 0% 89%;
+    --ring: 205 100% 30%;              /* accent-blue für Focus-Ring */
+    --radius: 12px;                    /* Card-Standard */
+  }
+}
+
+@layer base {
+  /* ── Globale Typografie-Defaults aus dem Guide ─────────── */
+  html {
+    font-family: "Fira Sans", system-ui, -apple-system, sans-serif;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    color: var(--we-text-default);
+    background: var(--we-surface-default);
+    font-size: 16px;
+    line-height: 24px;
+  }
+
+  /* Globaler Focus-Visible-Stil — WCAG */
+  :focus-visible {
+    outline: 3px solid var(--we-accent-blue);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  /* Headlines: Fira Sans Bold, brand-secondary, line-height 1.3em
+     Mobile-Resize via clamp() — folgt RFS-Logik aus dem Guide.   */
+
+  /* Globale h1-h6-Defaults entfernt — Headlines werden ausschließlich
+     über Tailwind-Klassen text-we-h-* gestylt, um Konflikte mit
+     Radix-gewrappten Triggern (z.B. AccordionTrigger im h3) zu vermeiden. */
+
+  /* Display-Headlines (3xl/2xl) als separate Utility-Klassen,
+     da nicht jedes h1 die größte Ausprägung sein sollte.        */
+  .we-display-3xl {
+    font-size: clamp(40.72px, 4.9vw + 16px, 76px);
+    line-height: 1.24;
+    font-weight: 700;
+    color: var(--we-text-heading);
+  }
+
+  .we-display-2xl {
+    font-size: clamp(27.40px, 1.5vw + 22px, 40px);
+    line-height: 1.30;
+    font-weight: 700;
+    color: var(--we-text-heading);
+  }
+}
