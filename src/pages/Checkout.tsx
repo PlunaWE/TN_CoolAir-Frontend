@@ -749,7 +749,7 @@ const Checkout = () => {
                 <div className="mt-we-component-lg space-y-2 border-t border-we-border pt-we-component-md">
                   <div className="flex items-center gap-2 text-we-body-xs text-we-text">
                     <Shield size={14} className="text-we-success flex-shrink-0" />
-                    <span>Die sichere fiserv-Zahlung wird nach Absenden in einem neuen Tab geöffnet.</span>
+                    <span>Sichere Zahlung via fiserv.</span>
                   </div>
                 </div>
               </aside>
