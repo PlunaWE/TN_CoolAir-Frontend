@@ -718,7 +718,7 @@ const Checkout = () => {
 
                   <div className="flex justify-between">
                     <span className="text-we-muted">Zahlung</span>
-                    <span className="font-bold text-we-heading">fiserv</span>
+                    <span className="font-bold text-we-heading">Einmalzahlung</span>
                   </div>
 
                   <div className="flex justify-between">
