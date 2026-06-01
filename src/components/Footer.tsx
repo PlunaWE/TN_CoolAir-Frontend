@@ -1,8 +1,9 @@
 import { Link } from "react-router-dom";
 import { Container } from "@/components/Container";
+import { openPiwikConsentForm } from "@/lib/piwik";
 
 /**
- * Footer — migriert auf Wien Energie Design Tokens (we-*).
+ * Footer — migriert auf Wien Energie Design Tokens (we-*).
  * Heller Hintergrund (bg-white) → Standard-Modus:
  *  - Headlines: text-we-heading
  *  - Body: text-we-text
@@ -26,31 +27,97 @@ const Footer = () => (
             className="h-10 md:h-12 lg:h-14 w-auto object-contain"
           />
         </div>
+
         <div>
-          <h4 className="text-we-body-lg font-bold mb-we-component-sm text-we-heading">Rechtliches</h4>
+          <h4 className="text-we-body-lg font-bold mb-we-component-sm text-we-heading">
+            Rechtliches
+          </h4>
+
           <ul className="space-y-2 text-we-body-sm">
-            <li><Link to="/impressum" className="text-we-heading hover:text-we-heading/80 transition-colors">Impressum</Link></li>
-            <li><Link to="/datenschutz" className="text-we-heading hover:text-we-heading/80 transition-colors">Datenschutz</Link></li>
-            <li><Link to="/agb" className="text-we-heading hover:text-we-heading/80 transition-colors">AGB</Link></li>
-            <li><Link to="/widerruf" className="text-we-heading hover:text-we-heading/80 transition-colors">Widerrufsbelehrung</Link></li>
-            <li><Link to="/barrierefreiheit" className="text-we-heading hover:text-we-heading/80 transition-colors">Barrierefreiheit</Link></li>
+            <li>
+              <Link
+                to="/impressum"
+                className="text-we-heading hover:text-we-heading/80 transition-colors"
+              >
+                Impressum
+              </Link>
+            </li>
+
+            <li>
+              <Link
+                to="/datenschutz"
+                className="text-we-heading hover:text-we-heading/80 transition-colors"
+              >
+                Datenschutz
+              </Link>
+            </li>
+
+            <li>
+              <button
+                type="button"
+                onClick={openPiwikConsentForm}
+                className="text-we-heading hover:text-we-heading/80 transition-colors underline-offset-2 hover:underline text-left"
+              >
+                Cookie-Einstellungen
+              </button>
+            </li>
+
+            <li>
+              <Link
+                to="/agb"
+                className="text-we-heading hover:text-we-heading/80 transition-colors"
+              >
+                AGB
+              </Link>
+            </li>
+
+            <li>
+              <Link
+                to="/widerruf"
+                className="text-we-heading hover:text-we-heading/80 transition-colors"
+              >
+                Widerrufsbelehrung
+              </Link>
+            </li>
+
+            <li>
+              <Link
+                to="/barrierefreiheit"
+                className="text-we-heading hover:text-we-heading/80 transition-colors"
+              >
+                Barrierefreiheit
+              </Link>
+            </li>
           </ul>
         </div>
+
         <div>
-          <h4 className="text-we-body-lg font-bold mb-we-component-sm text-we-heading">Kontakt</h4>
+          <h4 className="text-we-body-lg font-bold mb-we-component-sm text-we-heading">
+            Kontakt
+          </h4>
+
           <p className="text-we-body-sm text-we-heading">
-            Wien Energie GmbH<br />
-            Thomas-Klestil-Platz 14<br />
-            1030 Wien<br />
-            Telefon: +43 1 4004818888<br />
-            Telefonzeiten: Mo–Fr 09:00–17:00 Uhr<br />
+            Wien Energie GmbH
+            <br />
+            Thomas-Klestil-Platz 14
+            <br />
+            1030 Wien
+            <br />
+            Telefon: +43 1 4004818888
+            <br />
+            Telefonzeiten: Mo–Fr 09:00–17:00 Uhr
+            <br />
             sommerfrische@wienenergie.at
           </p>
         </div>
       </div>
+
       <div className="mt-we-section-lg pt-we-component-lg border-t border-white text-we-body-xs text-we-heading text-left font-bold">
-        <p className="mb-2 font-normal">Gültig bis 31.07.2026, nur solange der Vorrat reicht.</p>
-        © {new Date().getFullYear()} Sommerfrische – powered by Wien Energie GmbH. Alle Rechte vorbehalten.
+        <p className="mb-2 font-normal">
+          Gültig bis 31.07.2026, nur solange der Vorrat reicht.
+        </p>
+        © {new Date().getFullYear()} Sommerfrische – powered by Wien Energie GmbH.
+        Alle Rechte vorbehalten.
       </div>
     </Container>
   </footer>
