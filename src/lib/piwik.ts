@@ -53,6 +53,8 @@ function normalizePiwikContainerUrl(url: string): string {
 }
 
 export function getDataLayer(): DataLayerEvent[] {
+  if (typeof window === "undefined") return [];
+
   window[PIWIK_DATA_LAYER_NAME] = window[PIWIK_DATA_LAYER_NAME] || [];
   return window[PIWIK_DATA_LAYER_NAME] as DataLayerEvent[];
 }
@@ -66,6 +68,32 @@ export function pushVirtualPageView(event: Omit<VirtualPageViewEvent, "event">):
   pushDataLayerEvent({
     event: "virtualPageView",
     ...event,
+  });
+}
+
+/**
+ * DataLayer-only event.
+ *
+ * Important:
+ * This does NOT call Piwik trackEvent.
+ * It only pushes an event into dataLayer, so no direct Piwik tracking request
+ * is created by button clicks or UI interactions.
+ */
+
+export function trackEvent(
+  category: string,
+  action: string,
+  name?: string,
+  value?: number,
+  metadata?: Record<string, DataLayerValue>
+): void {
+  pushDataLayerEvent({
+    event: "customEvent",
+    event_category: category,
+    event_action: action,
+    event_name: name || "",
+    event_value: typeof value === "number" ? value : null,
+    ...(metadata || {}),
   });
 }
 
