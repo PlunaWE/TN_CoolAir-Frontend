@@ -10,6 +10,16 @@ export const PIWIK_CONTAINER_URL = normalizePiwikContainerUrl(
 declare global {
   interface Window {
     dataLayer?: DataLayerEvent[];
+    ppms?: {
+      cm?: {
+        api?: (
+          method: string,
+          onFulfilled?: unknown,
+          onRejected?: unknown,
+          ...args: unknown[]
+        ) => void;
+      };
+    };
   }
 }
 
@@ -120,4 +130,24 @@ export function createVirtualPageViewPayload(
     categorynames: meta.categorynames || "No categories",
     tagnames: meta.tagnames || "No tags",
   };
+}
+
+export function openPiwikConsentForm(): void {
+  if (typeof window === "undefined") return;
+
+  if (window.ppms?.cm?.api) {
+    window.ppms.cm.api(
+      "openConsentForm",
+      () => {
+        console.info("[Piwik PRO] Consent form opened.");
+      },
+      (error: unknown) => {
+        console.warn("[Piwik PRO] Consent form could not be opened.", error);
+      }
+    );
+
+    return;
+  }
+
+  console.warn("[Piwik PRO] Consent Manager API is not available yet.");
 }
