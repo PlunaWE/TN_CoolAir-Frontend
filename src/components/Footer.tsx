@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
 import { Container } from "@/components/Container";
-import { openPiwikConsentForm } from "@/lib/piwik";
 
 /**
  * Footer — migriert auf Wien Energie Design Tokens (we-*).
@@ -50,16 +49,6 @@ const Footer = () => (
               >
                 Datenschutz
               </Link>
-            </li>
-
-            <li>
-              <button
-                type="button"
-                onClick={openPiwikConsentForm}
-                className="text-we-heading hover:text-we-heading/80 transition-colors underline-offset-2 hover:underline text-left"
-              >
-                Cookie-Einstellungen
-              </button>
             </li>
 
             <li>
